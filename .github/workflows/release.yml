@@ -1,0 +1,67 @@
+# Release: when a version tag is pushed (git tag v1.0.0 && git push origin v1.0.0), build the
+# backend and web images and publish them to GitHub Container Registry:
+#
+#   ghcr.io/<owner>/<repo>-backend:1.0.0 (and :latest)
+#   ghcr.io/<owner>/<repo>-web:1.0.0     (and :latest)
+#
+# The server then runs those images (see README, "Deploying"): set BACKEND_IMAGE / WEB_IMAGE
+# in its .env and run `docker compose -f docker-compose.yml -f docker-compose.prod.yml pull`
+# followed by `up -d`. Deploying stays a deliberate step on the server.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write # push to ghcr.io
+
+jobs:
+  images:
+    name: Build and publish images
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - name: backend
+            context: ./backend
+          - name: web
+            context: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}-${{ matrix.name }}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=sha,format=short
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}

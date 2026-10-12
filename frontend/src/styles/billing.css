@@ -1,0 +1,177 @@
+/* Plan & billing page. The plan cards reuse the landing page's card layout, re-tinted with
+   the app's theme tokens (light or dark). */
+
+.billing-plans {
+  --l-border: var(--border);
+  --l-muted: var(--muted);
+  --l-text-2: var(--text-2);
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 8px 0 24px;
+}
+
+.billing-plans .plan-grid {
+  max-width: none;
+}
+
+.billing-plans .plan-card {
+  padding: 22px;
+  background: var(--surface);
+}
+
+.billing-plans .plan-featured {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, var(--surface)), var(--surface) 60%);
+}
+
+.billing-plans .plan-price {
+  margin: 12px 0 6px;
+  font-size: 1.8rem;
+}
+
+.billing-plans .plan-tagline {
+  min-height: 2.8em;
+}
+
+.plan-hint {
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.billing-status {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.billing-status-main {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.billing-status h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 4px;
+  font-size: 1.4rem;
+}
+
+.chip-warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.inline-icon {
+  display: inline;
+  vertical-align: -2px;
+}
+
+.billing-alert {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: var(--text-sm);
+}
+
+.billing-alert svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.billing-message {
+  margin: 0 0 4px;
+}
+
+/* Upgrade prompts elsewhere in the app */
+.upsell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 10px;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+.upsell a {
+  font-weight: 600;
+}
+
+.plan-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: var(--text-xs);
+  color: var(--text-2);
+}
+
+.plan-pill:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  color: var(--text);
+}
+
+.plan-pill strong {
+  color: var(--text);
+}
+
+.plan-pill .plan-pill-cta {
+  font-weight: 650;
+  color: var(--accent);
+}
+
+@media (max-width: 900px) {
+  .billing-plans .plan-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Unconfirmed email banner, top of every signed-in page */
+.verify-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  max-width: 1100px;
+  margin: 0 auto 18px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--warn-soft);
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.verify-banner > svg {
+  color: var(--warn);
+  flex-shrink: 0;
+}
+
+.verify-banner > span:first-of-type {
+  flex: 1;
+  min-width: 220px;
+}
+
+.verify-banner-close {
+  margin-left: 4px;
+  color: var(--muted);
+}
+
+.verify-banner-close:hover {
+  color: var(--text);
+}

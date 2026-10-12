@@ -1,0 +1,23 @@
+# Public entry point in production: HTTPS for DOMAIN with automatic certificates
+# (Let's Encrypt), HTTP redirected to HTTPS, then everything goes to the web container
+# (nginx serves the app and proxies /api). DNS for DOMAIN must point at this server and
+# ports 80 and 443 must be open.
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+	# Live updates and streamed answers are Server-Sent Events: Caddy streams them as they
+	# arrive (it flushes text/event-stream immediately).
+	reverse_proxy web:80
+}
+
+# Optional: www.DOMAIN -> DOMAIN
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}

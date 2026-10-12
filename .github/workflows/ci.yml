@@ -1,0 +1,170 @@
+# Continuous integration: every push to main and every pull request must pass all jobs.
+#
+#   backend   lint + format check, migrations match the models, full test suite against
+#             real PostgreSQL and Redis (the same versions as docker-compose.yml)
+#   frontend  type-check, lint, production build
+#   docker    both images still build, and docker-compose.yml is valid
+#
+# Nothing here deploys or publishes anything: release.yml publishes images for version tags.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: # allow a manual run from the Actions tab
+
+# A newer push to the same branch or PR cancels the run that is already in progress.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: the jobs only need to read the code.
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (lint, migrations, tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nis
+          POSTGRES_PASSWORD: nis-ci-password # throwaway database, exists only during the job
+          POSTGRES_DB: nis
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U nis -d nis"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      # Used by `alembic upgrade/check` (app settings read DATABASE_URL).
+      DATABASE_URL: postgresql+asyncpg://nis:nis-ci-password@127.0.0.1:5432/nis
+      REDIS_URL: redis://127.0.0.1:6379/0
+      # Used by the test suite (tests/conftest.py): a separate nis_test database and Redis DB 15.
+      TEST_DATABASE_URL: postgresql+asyncpg://nis:nis-ci-password@127.0.0.1:5432/nis_test
+      TEST_REDIS_URL: redis://127.0.0.1:6379/15
+      ENVIRONMENT: test
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv and Python 3.12
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies (exactly as locked)
+        run: uv sync --locked
+
+      - name: Lint (ruff)
+        run: uv run ruff check . --output-format github
+
+      - name: Formatting (ruff format)
+        run: uv run ruff format --check .
+
+      - name: Migrations apply cleanly from an empty database
+        run: uv run alembic upgrade head
+
+      - name: Models match migrations (no missing migration)
+        run: uv run alembic check
+
+      - name: Migrations can be rolled back and re-applied
+        run: |
+          uv run alembic downgrade base
+          uv run alembic upgrade head
+
+      - name: Tests
+        run: uv run pytest -q -p no:cacheprovider
+
+  frontend:
+    name: Frontend (types, lint, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies (exactly as locked)
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
+
+  docker:
+    name: Docker images build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: docker-compose.yml is valid
+        env:
+          # Placeholder values: compose refuses to render without them. Never real secrets.
+          POSTGRES_PASSWORD: ci-placeholder
+          JWT_SECRET: ci-placeholder-not-a-real-secret-0123456789
+        run: docker compose config --quiet
+
+      - name: Production compose files are valid
+        env:
+          POSTGRES_PASSWORD: ci-placeholder
+          JWT_SECRET: ci-placeholder-not-a-real-secret-0123456789
+          DOMAIN: news.example.com
+          ACME_EMAIL: ops@example.com
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml config --quiet
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: false
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: false
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web

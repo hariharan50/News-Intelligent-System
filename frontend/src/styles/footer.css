@@ -1,0 +1,246 @@
+/* Public site footer: a warm sand band under the dark pages, same in light and dark theme. */
+
+.site-footer {
+  --sf-bg: #d9c99c;
+  --sf-bg-2: #cfbd8c;
+  --sf-text: #2b2417;
+  --sf-muted: #5c5038;
+  --sf-line: rgb(43 36 23 / 0.16);
+  --sf-link: #0f6b62;
+  --sf-link-hover: #0a4f48;
+
+  position: relative;
+  background:
+    radial-gradient(900px 260px at 50% 0%, rgb(255 255 255 / 0.28), transparent 70%),
+    linear-gradient(180deg, var(--sf-bg) 0%, var(--sf-bg-2) 100%);
+  color: var(--sf-text);
+  font-family: var(--font-sans);
+}
+
+/* A soft edge where the dark page meets the sand. */
+.site-footer::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent);
+}
+
+.site-footer-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 64px 24px 40px;
+}
+
+.site-footer-brand {
+  margin: 0 0 44px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sf-text);
+}
+
+.site-footer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 40px 56px;
+}
+
+.site-footer-links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+}
+
+.site-footer-links > div {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.site-footer-links h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.site-footer-links a {
+  width: fit-content;
+  color: var(--sf-link);
+  font-size: 0.975rem;
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size var(--normal) var(--ease), color var(--fast) var(--ease);
+}
+
+.site-footer-links a:hover {
+  color: var(--sf-link-hover);
+  background-size: 100% 1px;
+}
+
+.site-footer-about {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.site-footer-rule {
+  height: 1px;
+  margin-bottom: 10px;
+  background: var(--sf-line);
+}
+
+.site-footer-about p {
+  margin: 0;
+  font-size: 0.975rem;
+  line-height: 1.65;
+  color: var(--sf-muted);
+}
+
+.site-footer-live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--sf-text) !important;
+}
+
+.site-footer-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #15803d;
+  box-shadow: 0 0 0 0 rgb(21 128 61 / 0.5);
+  animation: sf-pulse 2.2s ease-out infinite;
+}
+
+@keyframes sf-pulse {
+  70% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+
+.site-footer-icons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.site-footer-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--sf-line);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.22);
+  color: var(--sf-text);
+  cursor: default;
+  transition: transform var(--fast) var(--ease), background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.site-footer-icon:hover {
+  transform: translateY(-2px);
+  border-color: rgb(43 36 23 / 0.35);
+  background: rgb(255 255 255 / 0.45);
+}
+
+button.site-footer-icon {
+  cursor: pointer;
+}
+
+.site-footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  max-width: none;
+  padding: 18px 40px;
+  border-top: 1px solid var(--sf-line);
+  background: rgb(43 36 23 / 0.05);
+  font-size: 0.95rem;
+  color: var(--sf-muted);
+}
+
+.site-footer-bottom strong {
+  color: var(--sf-text);
+}
+
+.site-footer-made {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.site-footer-made svg {
+  color: #b42318;
+}
+
+.site-footer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.32);
+  color: var(--sf-text);
+  font-weight: 650;
+}
+
+@media (max-width: 900px) {
+  .site-footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .site-footer-icons {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .site-footer-inner {
+    padding: 48px 20px 32px;
+  }
+
+  .site-footer-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .site-footer-bottom {
+    flex-direction: column;
+    padding: 18px 20px;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-footer-live-dot {
+    animation: none;
+  }
+}
+
+/* The landing page colours its headings and links for a dark background; the footer is
+   light, so restate them with higher specificity. */
+.site-footer .site-footer-brand,
+.site-footer .site-footer-links h3 {
+  color: var(--sf-text);
+}
+
+.site-footer .site-footer-links a {
+  color: var(--sf-link);
+}
+
+.site-footer .site-footer-links a:hover {
+  color: var(--sf-link-hover);
+}

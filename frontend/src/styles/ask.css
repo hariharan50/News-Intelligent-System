@@ -1,0 +1,257 @@
+/* Ask the news, and the brief card on the feed (shared answer styles). */
+
+.ask-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.ask-locked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.ask-locked > div {
+  flex: 1;
+  min-width: 240px;
+}
+
+.ask-locked > svg {
+  color: var(--accent);
+}
+
+.ask-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-bottom: 16px;
+}
+
+.ask-empty {
+  padding: 8px 0;
+}
+
+.ask-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ask-examples .chip {
+  cursor: pointer;
+}
+
+.ask-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ask-question {
+  align-self: flex-end;
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 14px 14px 4px 14px;
+  background: var(--accent-soft);
+  color: var(--accent-soft-text, var(--text));
+  font-weight: 550;
+}
+
+.ask-answer {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.ask-answer > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.ask-avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.ask-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ask-box {
+  position: sticky;
+  bottom: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.12);
+}
+
+.ask-box textarea {
+  flex: 1;
+  min-height: 44px;
+  max-height: 160px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  resize: vertical;
+  font: inherit;
+  color: var(--text);
+  outline: none;
+}
+
+.ask-send {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  justify-content: center;
+}
+
+.ask-quota {
+  margin: 8px 4px 0;
+  text-align: right;
+}
+
+.ask-recent {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.ask-recent-item summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: 550;
+}
+
+.ask-recent-item[open] summary {
+  margin-bottom: 10px;
+}
+
+/* Answer text */
+.rich-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  line-height: 1.6;
+}
+
+.rich-answer p,
+.rich-answer ul {
+  margin: 0;
+}
+
+.rich-answer ul {
+  padding-left: 20px;
+}
+
+.rich-answer li + li {
+  margin-top: 4px;
+}
+
+.rich-answer h4 {
+  margin: 6px 0 0;
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.cite {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin: 0 1px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: 2px;
+  text-decoration: none;
+}
+
+a.cite:hover {
+  background: var(--accent);
+  color: var(--accent-contrast, #04201c);
+}
+
+.answer-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.answer-sources li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+
+/* Pre-market brief on the feed */
+.brief-card {
+  margin-bottom: 18px;
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+
+.brief-card summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.brief-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.brief-card[open] summary {
+  margin-bottom: 12px;
+}
+
+.brief-card summary h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.brief-card summary .muted {
+  margin-left: auto;
+}

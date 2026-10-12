@@ -1,0 +1,90 @@
+# Production overrides. Use together with docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Differences from development:
+#   - Caddy is the only thing exposed (ports 80/443) and provides HTTPS for $DOMAIN;
+#     PostgreSQL, Redis, the API and nginx are reachable only inside the Docker network.
+#   - ENVIRONMENT=production: the API refuses to start with unsafe settings.
+#   - A backup service writes a daily database dump to ./backups.
+#   - Images can come from a registry (BACKEND_IMAGE / WEB_IMAGE, e.g. the ones the
+#     Release workflow pushes to GHCR) instead of being built on the server.
+name: nis
+
+x-prod: &prod
+  image: ${BACKEND_IMAGE:-nis-backend:prod}
+  environment:
+    ENVIRONMENT: production
+    APP_VERSION: ${APP_VERSION:-}
+    SENTRY_DSN: ${SENTRY_DSN:-}
+    LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    CORS_ORIGINS: '["https://${DOMAIN:?set DOMAIN in .env}"]'
+    APP_BASE_URL: https://${DOMAIN}
+  logging:
+    driver: json-file
+    options: { max-size: "20m", max-file: "5" }
+
+services:
+  postgres:
+    ports: !reset []
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+
+  redis:
+    ports: !reset []
+
+  migrate: *prod
+  scheduler: *prod
+  worker: *prod
+  telegram: *prod
+
+  api:
+    <<: *prod
+    ports: !reset []
+
+  web:
+    image: ${WEB_IMAGE:-nis-web:prod}
+    ports: !reset []
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+
+  caddy:
+    image: caddy:2.10-alpine
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env (for certificate expiry notices)}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    volumes:
+      - ./ops/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+    restart: unless-stopped
+
+  backup:
+    image: postgres:16-alpine # same major version as the database
+    entrypoint: ["sh", "/ops/backup.sh"]
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-nis}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-nis}
+      BACKUP_HOUR: ${BACKUP_HOUR:-21}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes:
+      - ./ops/backup.sh:/ops/backup.sh:ro
+      - ./backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

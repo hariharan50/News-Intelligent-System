@@ -1,0 +1,4 @@
+/* Global styles. Page-specific sheets (landing, auth, app) are imported by their pages. */
+@import './styles/tokens.css';
+@import './styles/base.css';
+@import './styles/components.css';

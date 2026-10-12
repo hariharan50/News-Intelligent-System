@@ -1,0 +1,165 @@
+name: nis
+
+# Shared settings for every service built from ./backend.
+x-backend: &backend
+  build: ./backend
+  image: nis-backend:dev
+  environment:
+    ENVIRONMENT: ${ENVIRONMENT:-local}
+    # Off = personal tool (everything unlocked, no Claude calls). On = the SaaS product.
+    FEATURE_BILLING: ${FEATURE_BILLING:-false}
+    FEATURE_AI: ${FEATURE_AI:-false}
+    LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-nis}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-nis}
+    REDIS_URL: redis://redis:6379/0
+    JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+    # Encrypts two-step sign-in secrets. Required in production.
+    DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:-}
+    ADMIN_REQUIRE_2FA: ${ADMIN_REQUIRE_2FA:-}
+    # Optional: without these, Telegram shows as "not configured" and the poller idles.
+    TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+    TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-}
+    # Optional: "Continue with Google" (hidden without these).
+    GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+    GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+    # Optional: without a key, stories simply have no AI summary.
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    AI_SUMMARY_MODEL: ${AI_SUMMARY_MODEL:-claude-opus-5-5}
+    AI_DAILY_BUDGET_USD: ${AI_DAILY_BUDGET_USD:-3}
+    AI_AGENT_MODEL: ${AI_AGENT_MODEL:-claude-opus-5-5}
+    AI_AGENT_DAILY_BUDGET_USD: ${AI_AGENT_DAILY_BUDGET_USD:-5}
+    # Optional: without keys, billing shows as "not configured" and everyone is on trial/free.
+    RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+    RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+    RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+    RAZORPAY_PLAN_PRO: ${RAZORPAY_PLAN_PRO:-}
+    RAZORPAY_PLAN_PRO_PLUS: ${RAZORPAY_PLAN_PRO_PLUS:-}
+    TRIAL_DAYS: ${TRIAL_DAYS:-7}
+    # Email: "console" logs emails (development); "smtp" sends them. See .env.example.
+    APP_BASE_URL: ${APP_BASE_URL:-http://127.0.0.1:8081}
+    EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}
+    EMAIL_FROM: ${EMAIL_FROM:-News Intelligence <no-reply@example.com>}
+    EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}
+    SMTP_HOST: ${SMTP_HOST:-}
+    SMTP_PORT: ${SMTP_PORT:-587}
+    SMTP_USERNAME: ${SMTP_USERNAME:-}
+    SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    SMTP_SECURITY: ${SMTP_SECURITY:-starttls}
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-nis}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Bound to localhost only, for running the API or tools from the host during development.
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    # AOF persistence keeps queued jobs across restarts; Redis is still never the only copy of data.
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    ports:
+      - "127.0.0.1:${REDIS_HOST_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    <<: *backend
+    # Schema first, then insert any launch sources that don't exist yet (never overwrites).
+    command: ["sh", "-c", "alembic upgrade head && python -m app.cli seed-sources"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    <<: *backend
+    ports:
+      - "127.0.0.1:${API_HOST_PORT:-8000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/live', timeout=3)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  scheduler:
+    <<: *backend
+    # Exactly one scheduler: a second one would enqueue every scheduled task twice.
+    command: ["taskiq", "scheduler", "app.worker.scheduler:scheduler", "app.worker.tasks"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  worker:
+    <<: *backend
+    command: ["taskiq", "worker", "app.worker.broker:broker", "app.worker.tasks", "--workers", "1"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    # Healthy once a scheduled heartbeat has gone scheduler -> Redis -> worker (up to ~1 minute).
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.worker.healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+
+  telegram:
+    <<: *backend
+    # Receives messages sent to the bot (/start links a chat). Exactly one: Telegram allows
+    # a single long-polling consumer per bot.
+    command: ["python", "-m", "app.telegram.poller"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  web:
+    build: ./frontend
+    image: nis-web:dev
+    ports:
+      - "${WEB_HOST_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:

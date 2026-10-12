@@ -1,0 +1,278 @@
+/* ==========================================================================
+   Top bar (desktop): page name, quick search, market clock, alerts, account.
+   ========================================================================== */
+
+:root {
+  --topbar-h: 52px;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: var(--topbar-h);
+  padding: 0 20px 0 32px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.topbar-page {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  color: var(--text);
+}
+
+.topbar-page svg {
+  color: var(--accent);
+}
+
+.topbar-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 380px;
+  height: 34px;
+  margin: 0 auto;
+  padding: 0 8px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+
+.topbar-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+
+.topbar-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: var(--text-sm);
+  box-shadow: none;
+}
+
+.topbar-search input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.topbar-search kbd {
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+
+.topbar-search:focus-within kbd {
+  opacity: 1;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* Market clock */
+.topbar-market {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  margin-right: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.topbar-market-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+
+.topbar-market.is-open .topbar-market-dot {
+  background: var(--ok);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent);
+  animation: market-pulse 2s ease-out infinite;
+}
+
+@keyframes market-pulse {
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
+.topbar-market-state {
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.topbar-market.is-open .topbar-market-state {
+  color: var(--ok);
+}
+
+.topbar-clock {
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+/* Bell and avatar */
+.topbar-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.topbar-icon:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.topbar-badge {
+  position: absolute;
+  top: 3px;
+  right: 2px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border: 2px solid var(--bg);
+  border-radius: var(--radius-full);
+  background: var(--critical);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 13px;
+  text-align: center;
+}
+
+.topbar-avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #3b82f6));
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.topbar-avatar:hover {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+@media (max-width: 1240px) {
+  .topbar-market-detail {
+    display: none;
+  }
+}
+
+/* Phones and small tablets use the compact mobile bar instead. */
+@media (max-width: 900px) {
+  :root {
+    --topbar-h: 0px;
+  }
+
+  .topbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar-market.is-open .topbar-market-dot {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ refresh */
+.refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.refresh-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: var(--surface-2);
+}
+
+.refresh-btn:disabled {
+  cursor: progress;
+}
+
+.refresh-btn.is-running {
+  color: var(--accent);
+}
+
+.refresh-btn.is-done {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent);
+}
+
+.refresh-btn.is-error {
+  border-color: color-mix(in srgb, var(--critical) 45%, var(--border));
+  color: var(--critical);
+}
+
+.refresh-btn.compact {
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  padding: 0;
+  justify-content: center;
+}
+
+.refresh-btn .spin {
+  animation: refresh-spin 0.9s linear infinite;
+}
+
+@keyframes refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .refresh-btn .spin {
+    animation-duration: 2.5s;
+  }
+}
