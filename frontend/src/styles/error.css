@@ -1,0 +1,70 @@
+/* The crash screen (components/ErrorBoundary.tsx).
+   Self-contained on purpose: it has to render when the rest of the app has failed. */
+
+.crash {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: var(--bg, #f4f6fa);
+}
+
+.crash-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 32px;
+  border-radius: var(--radius-lg, 20px);
+  background: var(--surface, #fff);
+  box-shadow: var(--shadow-md, 0 16px 36px rgb(16 24 40 / 0.09));
+  text-align: center;
+}
+
+.crash-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: var(--warn-soft, #fef4dc);
+  color: var(--warn, #d9920a);
+}
+
+.crash-card h1 {
+  margin-bottom: 10px;
+  font-family: var(--font-display, system-ui), system-ui, sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text, #16192b);
+}
+
+.crash-card p {
+  margin-bottom: 22px;
+  font-size: var(--text-sm, 0.8125rem);
+  line-height: 1.6;
+  color: var(--muted, #8a93a8);
+}
+
+/* Development only: a stack trace, kept scrollable so it cannot push the buttons away. */
+.crash-detail {
+  max-height: 180px;
+  margin-bottom: 20px;
+  padding: 12px;
+  overflow: auto;
+  border-radius: var(--radius-sm, 10px);
+  background: var(--surface-2, #f3f6fb);
+  color: var(--text-2, #3d465e);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.crash-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
