@@ -94,6 +94,7 @@ When a poll stores new articles, it enqueues `process.pending`, which also runs 
 | How long a login lasts | The cookie is a **session cookie** unless the person ticks "Keep me signed in", so closing the browser ends the session and reopening the app asks for the password. Remembered logins get a cookie lasting `SESSION_TTL_DAYS` (30). Either way a session nobody has refreshed for `REFRESH_IDLE_TIMEOUT_HOURS` (12) can no longer be refreshed, and the session row is revoked with reason `idle_timeout`. Google sign-in never asks to be remembered. `ALLOW_PERSISTENT_SESSIONS=false` refuses remembering account-wide. |
 | Visiting `/login` | Always shows the sign-in form. A live session is offered as a "Continue to the app" link, never acted on automatically: redirecting straight in meant a browser still holding a refresh cookie entered the app with nobody typing a password. |
 | Passwords | Argon2id. Login is rate-limited per email and IP, and unknown emails take as long as wrong passwords. |
+| Errors | Every failure answers with `{"detail": {"code", "message"}}`, including unforeseen ones: a catch-all handler turns them into `code: "server_error"` plus the request id, so the browser always has something to show and the cause never reaches the person. |
 
 Endpoints:
 - `POST /api/auth/register`, `/login`, `/token` (form login for the API docs' Authorize button), `/refresh`, `/logout`, `/logout-all`
@@ -445,6 +446,8 @@ Turn on two-step sign-in in **My account** before opening the admin panel. Admin
 **Monitoring.**
 - **Uptime:** point a free monitor (UptimeRobot, Better Stack) at `https://DOMAIN/api/health/ready`. It returns 503 if the database, Redis or the news pipeline is down.
 - **Errors:** set `SENTRY_DSN` to get crash reports from the API, worker and Telegram poller. Passwords, cookies, request bodies and emails are never sent.
+- **Request ids:** every response carries `X-Request-ID`, and every log line written while serving that request includes it, so one request can be followed through the logs: `docker compose logs api | grep <id>`. An inbound `X-Request-ID` is reused only if it matches `[A-Za-z0-9._-]{1,64}`, so a header cannot inject newlines and forge log lines. An unhandled error returns that id in the body; the cause stays in the logs and Sentry.
+- **Dependencies:** `.github/dependabot.yml` opens weekly grouped pull requests for the backend (uv), the frontend (npm), the base images and the Actions, with security updates ungrouped so an urgent one is never queued behind routine bumps. Turn on Dependabot alerts in the repository's Security settings as well — the config schedules updates, the setting is what reports known vulnerabilities.
 - **Logs:** `docker compose logs -f api worker`. Logs rotate at 5 × 20 MB per service.
 
 **Data retention.** Every night at 03:30 IST the worker deletes:

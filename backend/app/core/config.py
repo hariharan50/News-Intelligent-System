@@ -31,6 +31,12 @@ class Settings(BaseSettings):
         description="SQLAlchemy async URL (asyncpg driver).",
     )
     redis_url: str = "redis://localhost:6379/0"
+    # Connections each process keeps. Five services run this image (api, migrate,
+    # scheduler, worker, telegram), so the ceiling is roughly
+    # (db_pool_size + db_max_overflow) x processes, against PostgreSQL's
+    # max_connections (100 by default). Raise both together with max_connections.
+    db_pool_size: int = Field(default=5, ge=1, le=50)
+    db_max_overflow: int = Field(default=10, ge=0, le=50)
 
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:8080"]
 

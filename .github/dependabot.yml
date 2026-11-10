@@ -1,0 +1,57 @@
+# Dependency updates.
+#
+# The app handles passwords, phone numbers and payments, so a known vulnerability in a
+# transitive dependency matters. Nothing here was watching for one: CI ran lint, types
+# and tests, and no scanner.
+#
+# Updates are grouped so a week's patches arrive as one pull request per ecosystem
+# rather than a dozen. Security updates are deliberately left ungrouped, so an urgent
+# one is never queued behind a routine bump.
+version: 2
+
+updates:
+  - package-ecosystem: uv
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Asia/Kolkata
+    open-pull-requests-limit: 5
+    groups:
+      backend-minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Asia/Kolkata
+    open-pull-requests-limit: 5
+    groups:
+      frontend-minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+
+  # The base images the services are built from (python:3.12-slim, node, nginx).
+  - package-ecosystem: docker
+    directories:
+      - /backend
+      - /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Kolkata
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      timezone: Asia/Kolkata
+    groups:
+      actions:
+        applies-to: version-updates
+        update-types: [minor, patch]
