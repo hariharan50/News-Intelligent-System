@@ -29,8 +29,12 @@ import type {
 
 // ---------------------------------------------------------------- auth
 
-export const login = (email: string, password: string) =>
-  api<TokenResponse | MfaRequired>('/api/auth/login', { method: 'POST', body: { email, password }, auth: false })
+export const login = (email: string, password: string, remember = false) =>
+  api<TokenResponse | MfaRequired>('/api/auth/login', {
+    method: 'POST',
+    body: { email, password, remember_me: remember },
+    auth: false,
+  })
 export const loginSecondStep = (mfa_token: string, code: string) =>
   api<TokenResponse>('/api/auth/login/2fa', { method: 'POST', body: { mfa_token, code }, auth: false })
 

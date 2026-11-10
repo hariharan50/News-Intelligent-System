@@ -672,3 +672,50 @@ input[aria-invalid='true']:focus {
   overflow-wrap: anywhere;
   font-size: var(--text-sm);
 }
+
+/* "Keep me signed in" on the sign-in form. Off by default: see AuthPage.tsx. */
+.field-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.field-check input[type='checkbox'] {
+  margin-top: 2px;
+  flex: none;
+}
+
+.field-check span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.field-check small {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+/* Offered, not taken: a live session no longer redirects /login into the app. */
+.auth-resume {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2, var(--danger-soft));
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.auth-resume svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.auth-resume a {
+  font-weight: 600;
+}

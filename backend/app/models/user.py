@@ -90,5 +90,9 @@ class UserSession(Base):
         DateTime(timezone=True), server_default=func.now()
     )
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # True only when the person ticked "Keep me signed in": the refresh cookie then has a
+    # max-age and survives closing the browser. False means a cookie that dies with the
+    # browser, so every refresh must re-issue it the same way.
+    persistent: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     revoke_reason: Mapped[str | None] = mapped_column(String(40))

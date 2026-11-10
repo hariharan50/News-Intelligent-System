@@ -9,7 +9,7 @@ interface AuthState {
   status: Status
   user: User | null
   /** Resolves with an mfaToken when the account needs its authenticator code next. */
-  signIn: (email: string, password: string) => Promise<{ mfaToken?: string }>
+  signIn: (email: string, password: string, remember?: boolean) => Promise<{ mfaToken?: string }>
   completeSignIn: (mfaToken: string, code: string) => Promise<void>
   signUp: (body: endpoints.SignupBody) => Promise<void>
   /** Replace the cached user after the account was edited. */
@@ -19,8 +19,10 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null)
 
-// Refresh a minute before the 15-minute access token expires.
+// Refresh a minute before the access token expires.
 const REFRESH_EARLY_MS = 60_000
+// Only used if a response somehow arrives without expires_in.
+const FALLBACK_TTL_SECONDS = 15 * 60
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
@@ -49,9 +51,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Any refresh (scheduled, or after a 401) re-arms the timer; losing the session signs out.
   useEffect(
     () =>
-      onTokenChange((token) => {
+      onTokenChange((token, expiresIn) => {
         if (token) {
-          scheduleRefresh(15 * 60)
+          scheduleRefresh(expiresIn || FALLBACK_TTL_SECONDS)
         } else {
           window.clearTimeout(timer.current)
           setUser(null)
@@ -89,8 +91,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       status,
       user,
-      signIn: async (email, password) => {
-        const result = await endpoints.login(email, password)
+      signIn: async (email, password, remember = false) => {
+        const result = await endpoints.login(email, password, remember)
         if ('mfa_required' in result) return { mfaToken: result.mfa_token }
         acceptTokens(result)
         return {}

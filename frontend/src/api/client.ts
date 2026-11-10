@@ -46,7 +46,8 @@ export interface User {
   has_password: boolean
 }
 
-type Listener = (token: string | null) => void
+/** Called with the new token and its real lifetime in seconds, or null when signed out. */
+type Listener = (token: string | null, expiresIn: number) => void
 
 let accessToken: string | null = null
 let refreshing: Promise<string | null> | null = null
@@ -56,9 +57,9 @@ export function getAccessToken() {
   return accessToken
 }
 
-export function setAccessToken(token: string | null) {
+export function setAccessToken(token: string | null, expiresIn = 0) {
   accessToken = token
-  listeners.forEach((l) => l(token))
+  listeners.forEach((l) => l(token, expiresIn))
 }
 
 /** Called with the new token after every refresh, or null when the session is gone. */
@@ -98,7 +99,9 @@ export function refreshAccessToken(): Promise<string | null> {
         return null
       }
       const body = (await res.json()) as TokenResponse
-      setAccessToken(body.access_token)
+      // Pass the server's own lifetime on: the next refresh must be scheduled from it,
+      // not from an assumed 15 minutes.
+      setAccessToken(body.access_token, body.expires_in)
       return body.access_token
     })
     .catch(() => null) // network trouble: keep the current state, caller decides

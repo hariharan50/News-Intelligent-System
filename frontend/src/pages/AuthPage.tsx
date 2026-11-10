@@ -1,6 +1,6 @@
 import { ArrowLeft, Check, Eye, EyeOff, ShieldCheck } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { GoogleButton, googleErrorMessage } from '../components/GoogleButton'
@@ -42,6 +42,9 @@ function SignInForm() {
   })
   const [code, setCode] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  // Off by default: the refresh cookie then dies with the browser, so reopening it asks
+  // for the password instead of walking straight into the app.
+  const [remember, setRemember] = useState(false)
   const [error, setError] = useState<string | null>(() => googleErrorMessage(params.get('sso_error')))
   const [busy, setBusy] = useState(false)
 
@@ -53,7 +56,7 @@ function SignInForm() {
       if (mfaToken) {
         await completeSignIn(mfaToken, code)
       } else {
-        const { mfaToken: token } = await signIn(email, password)
+        const { mfaToken: token } = await signIn(email, password, remember)
         if (token) {
           setMfaToken(token)
           return
@@ -146,6 +149,13 @@ function SignInForm() {
             <button type="button" className="icon-btn password-toggle" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
+          </span>
+        </label>
+        <label className="field-check">
+          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+          <span>
+            Keep me signed in
+            <small>Leave this off on a shared or public computer.</small>
           </span>
         </label>
         {error && (
@@ -383,9 +393,12 @@ function SignUpForm() {
 // --------------------------------------------------------------------------- page
 
 export function AuthPage({ mode }: { mode: 'signin' | 'signup' }) {
-  const { status } = useAuth()
+  const { status, user } = useAuth()
   const { next } = useNext()
-  if (status === 'signed-in') return <Navigate to={next} replace />
+  // Asking to sign in always shows the form. A live session is offered, never taken: the
+  // old behaviour redirected straight into the app, so a browser holding a month-old
+  // refresh cookie walked in without anyone typing a password.
+  const resume = status === 'signed-in' ? next : null
 
   return (
     <div className="auth-page">
@@ -429,7 +442,21 @@ export function AuthPage({ mode }: { mode: 'signin' | 'signup' }) {
             <Logo size={24} />
           </span>
         </div>
-        <div className={`auth-card${mode === 'signup' ? ' auth-card-wide' : ''}`}>{mode === 'signin' ? <SignInForm /> : <SignUpForm />}</div>
+        <div className={`auth-card${mode === 'signup' ? ' auth-card-wide' : ''}`}>
+          {resume && (
+            <p className="auth-resume" role="status">
+              <ShieldCheck size={15} />
+              <span>
+                You still have a session open{user?.email ? ` as ${user.email}` : ''}.{' '}
+                <Link to={resume} replace>
+                  Continue to the app
+                </Link>
+                , or sign in below as someone else.
+              </span>
+            </p>
+          )}
+          {mode === 'signin' ? <SignInForm /> : <SignUpForm />}
+        </div>
         <p className="auth-legal">Not investment advice. We show headlines and link to the original publishers.</p>
       </main>
     </div>

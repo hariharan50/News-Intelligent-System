@@ -89,8 +89,10 @@ When a poll stores new articles, it enqueues `process.pending`, which also runs 
 | Piece | What it is |
 | --- | --- |
 | Access token | JWT (HS256), valid for 15 minutes, sent as `Authorization: Bearer …`. It carries the user id and session id (`sid`). |
-| Session | One `user_sessions` row per signed-in device. Every request checks the session is still active (cached in Redis for up to 5 minutes; revoking deletes the cache key), so logout and revocation take effect immediately. |
+| Session | One `user_sessions` row per signed-in device. Every request checks the session is still active (cached in Redis for up to 5 minutes; revoking writes a tombstone over the cache key, and positive entries are only written with `NX`, so a request in flight cannot un-revoke a session whose transaction has not committed yet). Logout and revocation take effect immediately. |
 | Refresh token | Random, in an httpOnly, SameSite=Strict cookie scoped to `/api/auth`, stored only as a SHA-256 hash. It rotates on every refresh. An already-rotated token presented more than 20 seconds after rotation revokes the whole session (theft detection). |
+| How long a login lasts | The cookie is a **session cookie** unless the person ticks "Keep me signed in", so closing the browser ends the session and reopening the app asks for the password. Remembered logins get a cookie lasting `SESSION_TTL_DAYS` (30). Either way a session nobody has refreshed for `REFRESH_IDLE_TIMEOUT_HOURS` (12) can no longer be refreshed, and the session row is revoked with reason `idle_timeout`. Google sign-in never asks to be remembered. `ALLOW_PERSISTENT_SESSIONS=false` refuses remembering account-wide. |
+| Visiting `/login` | Always shows the sign-in form. A live session is offered as a "Continue to the app" link, never acted on automatically: redirecting straight in meant a browser still holding a refresh cookie entered the app with nobody typing a password. |
 | Passwords | Argon2id. Login is rate-limited per email and IP, and unknown emails take as long as wrong passwords. |
 
 Endpoints:
@@ -315,7 +317,7 @@ Feed URLs are fetched only if they resolve to public addresses, including throug
 | `/settings/devices` | Signed-in devices; sign one out, or sign out everywhere. |
 | `/system` | Pipeline health, sources and unranked stories (development). |
 
-**Auth in the browser:** the access token is held in memory only. The httpOnly refresh cookie restores the session on reload and refreshes the token a minute before it expires; any 401 triggers one shared refresh and a retry.
+**Auth in the browser:** the access token is held in memory only. The httpOnly refresh cookie restores the session on reload and refreshes the token a minute before it expires, scheduled from the lifetime the server reported rather than an assumed 15 minutes; any 401 triggers one shared refresh and a retry. Because the cookie is a session cookie by default, a reload restores the session but a browser restart does not.
 
 **Live updates:** `GET /api/stream` is a Server-Sent Events stream read with `fetch()`, so the token goes in the `Authorization` header, never in a URL. After scoring, the worker publishes a per-user event through Redis pub/sub, and the page shows an "N new stories" banner plus a toast for alert-level stories. Only stories published in the last 24 hours are announced, and only when a story is new to a feed, crosses the alert line, or rises by 5 or more points. Re-scoring (`reprocess`, `rescore`) is silent. nginx passes the stream through unbuffered.
 

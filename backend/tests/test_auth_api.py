@@ -279,3 +279,99 @@ async def test_protected_routes_require_auth(api) -> None:
     client = api()
     for method, path in [("get", "/api/auth/me"), ("get", "/api/feed"), ("get", "/api/profiles")]:
         assert (await getattr(client, method)(path)).status_code == 401
+
+
+async def test_login_cookie_dies_with_the_browser_unless_remembered(api) -> None:
+    """The default sign-in must not leave a cookie that survives closing the browser.
+
+    This is the bug behind "clicking Login walked straight into the app": a persistent
+    30-day cookie let any later visit silently mint a fresh access token.
+    """
+    plain = await api().post(
+        "/api/auth/login", json={"email": "nobody@example.com", "password": PASSWORD}
+    )
+    assert plain.status_code == 401  # no account yet; registered below
+
+    client = api()
+    await register(client)
+
+    forgetful = await client.post(
+        "/api/auth/login", json={"email": "trader@example.com", "password": PASSWORD}
+    )
+    assert forgetful.status_code == 200
+    cookie = forgetful.headers["set-cookie"].lower()
+    assert f"{COOKIE}=" in cookie
+    assert "max-age" not in cookie and "expires=" not in cookie  # a session cookie
+
+    remembered = await api().post(
+        "/api/auth/login",
+        json={"email": "trader@example.com", "password": PASSWORD, "remember_me": True},
+    )
+    assert remembered.status_code == 200
+    cookie = remembered.headers["set-cookie"].lower()
+    assert f"max-age={get_settings().session_ttl_days * 86400}" in cookie
+
+
+async def test_remembering_survives_rotation(api) -> None:
+    client = api()
+    await register(client)
+    await client.post(
+        "/api/auth/login",
+        json={"email": "trader@example.com", "password": PASSWORD, "remember_me": True},
+    )
+    resp = await client.post("/api/auth/refresh")
+    assert resp.status_code == 200
+    # The rotated cookie keeps the choice: persistence lives on the session row, not the
+    # cookie, so a refresh cannot silently downgrade or upgrade it.
+    assert (
+        f"max-age={get_settings().session_ttl_days * 86400}" in resp.headers["set-cookie"].lower()
+    )
+
+
+async def test_idle_session_cannot_be_refreshed(api, db) -> None:
+    """A cookie left behind in a browser stops working once the session goes idle."""
+    client = api()
+    tokens = await register(client)
+    idle = timedelta(hours=get_settings().refresh_idle_timeout_hours + 1)
+
+    async with db() as session:
+        await session.execute(update(UserSession).values(last_used_at=datetime.now(UTC) - idle))
+        await session.commit()
+
+    assert (await client.post("/api/auth/refresh")).status_code == 401
+    # The session is ended, not merely refused, so the still-valid JWT dies with it.
+    assert (
+        await client.get("/api/auth/me", headers=bearer(tokens["access_token"]))
+    ).status_code == 401
+    async with db() as session:
+        row = await session.scalar(select(UserSession))
+    assert row.revoke_reason == "idle_timeout"
+
+
+async def test_revocation_beats_a_concurrent_request_repopulating_the_cache(api, db) -> None:
+    """Revoking tombstones the session cache, so an in-flight request cannot un-revoke it.
+
+    Deleting the key instead left a five-minute hole: the revoking transaction had not
+    committed, so a concurrent reader saw an active row and cached it.
+    """
+    from app.auth.service import SESSION_CACHE_TTL_SECONDS, revoke_session, session_is_active
+    from app.cache.redis import redis_client
+
+    client = api()
+    tokens = await register(client)
+    headers = bearer(tokens["access_token"])
+    assert (await client.get("/api/auth/me", headers=headers)).status_code == 200
+
+    async with db() as session:
+        row = await session.scalar(select(UserSession))
+        session_id, user_id = row.id, row.user_id
+
+    async with db() as revoking:
+        await revoke_session(revoking, redis_client, session_id, reason="logout")
+        # Still uncommitted: another request reading its own snapshot sees an active row.
+        async with db() as reader:
+            assert await session_is_active(reader, redis_client, session_id, user_id) is False
+        await revoking.commit()
+
+    assert await redis_client.ttl(f"nis:session:{session_id}") <= SESSION_CACHE_TTL_SECONDS
+    assert (await client.get("/api/auth/me", headers=headers)).status_code == 401

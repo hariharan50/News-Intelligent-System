@@ -82,6 +82,8 @@ def validated(check, value):  # noqa: ANN001, ANN202
 class LoginIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=1, max_length=128)
+    # Off by default: the refresh cookie then dies with the browser.
+    remember_me: bool = False
 
 
 class UserOut(BaseModel):
@@ -147,11 +149,16 @@ class SessionOut(BaseModel):
     current: bool
 
 
-def _set_refresh_cookie(response: Response, token: str) -> None:
+def _set_refresh_cookie(response: Response, token: str, *, persistent: bool) -> None:
+    """A session cookie unless the login asked to be kept signed in.
+
+    Without max_age the browser drops the cookie when it closes, so reopening the app asks
+    for the password instead of silently resuming a month-old login.
+    """
     response.set_cookie(
         settings.refresh_cookie_name,
         token,
-        max_age=settings.session_ttl_days * 86400,
+        max_age=settings.session_ttl_days * 86400 if persistent else None,
         httponly=True,  # unreadable from JavaScript, so XSS can't steal it
         secure=settings.secure_cookies,
         samesite="strict",  # never sent on cross-site requests (CSRF)
@@ -174,7 +181,12 @@ def _http_error(err: auth.AuthError) -> HTTPException:
 
 
 async def _sign_in(
-    db: SessionDep, request: Request, response: Response, email: str, password: str
+    db: SessionDep,
+    request: Request,
+    response: Response,
+    email: str,
+    password: str,
+    remember: bool = False,
 ) -> TokenOut | MfaRequiredOut:
     client = client_info(request)
     if not await auth.login_attempt_allowed(redis_client, email, client.ip_address):
@@ -183,14 +195,18 @@ async def _sign_in(
             detail={"code": "too_many_attempts", "message": "Too many attempts. Try later."},
         )
     try:
-        user, tokens = await auth.login(db, email=email, password=password, client=client)
+        user, tokens = await auth.login(
+            db, email=email, password=password, client=client, remember=remember
+        )
     except auth.AuthError as err:
         raise _http_error(err) from None
     await db.commit()
     if tokens is None:  # two-step sign-in: the attempt counter clears after the code step
-        return MfaRequiredOut(mfa_token=await twofactor.start_challenge(redis_client, user.id))
+        return MfaRequiredOut(
+            mfa_token=await twofactor.start_challenge(redis_client, user.id, remember=remember)
+        )
     await auth.clear_login_attempts(redis_client, email, client.ip_address)
-    _set_refresh_cookie(response, tokens.refresh_token)
+    _set_refresh_cookie(response, tokens.refresh_token, persistent=tokens.persistent)
     return TokenOut(
         access_token=tokens.access_token, expires_in=tokens.expires_in, user=UserOut.of(user)
     )
@@ -222,7 +238,7 @@ async def register(
     await emails.send_verification(db, user)
     await db.commit()
     await db.refresh(user)
-    _set_refresh_cookie(response, tokens.refresh_token)
+    _set_refresh_cookie(response, tokens.refresh_token, persistent=tokens.persistent)
     return TokenOut(
         access_token=tokens.access_token, expires_in=tokens.expires_in, user=UserOut.of(user)
     )
@@ -233,7 +249,7 @@ async def login(
     body: LoginIn, db: SessionDep, request: Request, response: Response
 ) -> TokenOut | MfaRequiredOut:
     """Sign in. With two-step sign-in on, answers {mfa_required, mfa_token} instead."""
-    return await _sign_in(db, request, response, body.email, body.password)
+    return await _sign_in(db, request, response, body.email, body.password, body.remember_me)
 
 
 @router.post("/login/2fa", response_model=TokenOut)
@@ -255,11 +271,12 @@ async def login_second_step(
             400, detail={"code": "wrong_code", "message": twofactor.WRONG_CODE.message}
         )
     client = client_info(request)
-    tokens = await auth.finish_login(db, user, client)
+    remember = await twofactor.challenge_remember(redis_client, body.mfa_token)
+    tokens = await auth.finish_login(db, user, client, remember=remember)
     await db.commit()
     await twofactor.end_challenge(redis_client, body.mfa_token)
     await auth.clear_login_attempts(redis_client, user.email, client.ip_address)
-    _set_refresh_cookie(response, tokens.refresh_token)
+    _set_refresh_cookie(response, tokens.refresh_token, persistent=tokens.persistent)
     return TokenOut(
         access_token=tokens.access_token, expires_in=tokens.expires_in, user=UserOut.of(user)
     )
@@ -301,7 +318,7 @@ async def refresh(
         return failed
     await db.commit()
     if tokens.refresh_token:
-        _set_refresh_cookie(response, tokens.refresh_token)
+        _set_refresh_cookie(response, tokens.refresh_token, persistent=tokens.persistent)
     return TokenOut(access_token=tokens.access_token, expires_in=tokens.expires_in)
 
 
@@ -559,11 +576,13 @@ async def google_callback(
         token = await twofactor.start_challenge(redis_client, user.id)
         response = RedirectResponse(f"/login?next={quote(flow.next)}#mfa={token}", status_code=303)
     else:
+        # Google sign-in never opts into a persistent cookie: there is no checkbox on
+        # Google's screen to ask for one.
         tokens = await auth.finish_login(db, user, client_info(request))
         await db.commit()
         target = "/feed?welcome=1" if created and flow.next == "/feed" else flow.next
         response = RedirectResponse(target, status_code=303)
-        _set_refresh_cookie(response, tokens.refresh_token)
+        _set_refresh_cookie(response, tokens.refresh_token, persistent=tokens.persistent)
     response.delete_cookie(google.STATE_COOKIE, path="/api/auth/google")
     log.info("Google sign-in for user %s%s", user.id, " (new account)" if created else "")
     return response

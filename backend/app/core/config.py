@@ -57,9 +57,16 @@ class Settings(BaseSettings):
     jwt_issuer: str = "nis"
     access_token_ttl_seconds: int = 15 * 60
     session_ttl_days: int = 30  # absolute lifetime of a login
+    # A session nobody has refreshed for this long can no longer be refreshed: coming back
+    # after a break asks for the password again, even inside session_ttl_days.
+    refresh_idle_timeout_hours: int = 12
     # A rotated-out refresh token is still honoured this long (two tabs refreshing at once).
     refresh_reuse_grace_seconds: int = 20
     refresh_cookie_name: str = "nis_refresh"
+    # Default: the refresh cookie dies with the browser, so reopening it asks for the
+    # password. "Keep me signed in" at sign-in opts into a cookie that lasts
+    # session_ttl_days. Set false to refuse persistent cookies account-wide.
+    allow_persistent_sessions: bool = True
     # None -> secure cookies everywhere except local/test (plain http on localhost).
     cookie_secure: bool | None = None
     login_max_attempts: int = 10  # per email+IP within the window below

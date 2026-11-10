@@ -32,11 +32,22 @@ WRONG_CODE = TwoFactorError(
 # --------------------------------------------------------------------------- login challenge
 
 
-async def start_challenge(redis: Redis, user_id: uuid.UUID) -> str:
-    """After a correct password: a short-lived token that the code step must present."""
+async def start_challenge(redis: Redis, user_id: uuid.UUID, *, remember: bool = False) -> str:
+    """After a correct password: a short-lived token that the code step must present.
+
+    `remember` carries the login form's "Keep me signed in" across the two steps, so the
+    code step does not have to be trusted to repeat it.
+    """
     token = secrets.token_urlsafe(32)
     await redis.set(f"nis:mfa:{token}", str(user_id), ex=CHALLENGE_TTL)
+    if remember:
+        await redis.set(f"nis:mfa:{token}:remember", "1", ex=CHALLENGE_TTL)
     return token
+
+
+async def challenge_remember(redis: Redis, token: str) -> bool:
+    """Whether the password step asked to be kept signed in."""
+    return await redis.get(f"nis:mfa:{token}:remember") == "1"
 
 
 async def challenge_user(redis: Redis, token: str) -> uuid.UUID | None:
@@ -54,7 +65,7 @@ async def challenge_user(redis: Redis, token: str) -> uuid.UUID | None:
 
 
 async def end_challenge(redis: Redis, token: str) -> None:
-    await redis.delete(f"nis:mfa:{token}", f"nis:mfa:{token}:tries")
+    await redis.delete(f"nis:mfa:{token}", f"nis:mfa:{token}:tries", f"nis:mfa:{token}:remember")
 
 
 async def check_code(db: AsyncSession, user: User, code: str) -> bool:
