@@ -44,7 +44,7 @@ export async function openCheckout(options: CheckoutOptions): Promise<RazorpayRe
   await loadScript()
   const Razorpay = window.Razorpay
   if (!Razorpay) throw new Error('Razorpay did not load.')
-  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#14b8a6'
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2e6bf0'
 
   return new Promise((resolve, reject) => {
     const checkout = new Razorpay({

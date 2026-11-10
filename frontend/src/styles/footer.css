@@ -78,7 +78,7 @@
   background-size: 0% 1px;
   background-position: 0 100%;
   background-repeat: no-repeat;
-  transition: background-size var(--normal) var(--ease), color var(--fast) var(--ease);
+  transition: background-size var(--duration) var(--ease), color var(--fast) var(--ease);
 }
 
 .site-footer-links a:hover {

@@ -20,6 +20,17 @@
   color: var(--accent);
 }
 
+/* On the dark rail the logo reads from the --nav-* palette: plain var(--text)
+   is near-black in light mode and would vanish against the navy. */
+.sidebar-logo .logo,
+.sidebar-logo .logo-text {
+  color: var(--nav-text);
+}
+
+.sidebar-logo .logo-accent {
+  color: var(--nav-active);
+}
+
 /* ------------------------------------------------------------------ splash */
 .splash {
   display: grid;
@@ -313,7 +324,7 @@ button.chip:hover {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
-  animation: toast-in var(--normal) var(--ease);
+  animation: toast-in var(--duration) var(--ease);
   position: relative;
   overflow: hidden;
 }

@@ -3,6 +3,11 @@
  *
  * Theme: light by default, dark when the OS prefers it, and an explicit choice
  * (data-theme on <html>) always wins. The landing page uses its own dark palette.
+ *
+ * The look: a deep navy navigation rail against a cool off-white page, with white
+ * cards that carry their weight in soft shadow rather than hard borders. The
+ * navigation keeps its dark palette in both themes, so the rail always anchors the
+ * page -- that is what --nav-* below is for.
  */
 
 :root {
@@ -16,158 +21,202 @@
   --text-xl: 1.25rem;
   --text-2xl: 1.625rem;
 
-  /* Shape */
-  --radius-sm: 8px;
-  --radius: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 22px;
+  /* Shape. Generous radii: cards read as soft panels, not boxes. */
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
   --radius-full: 999px;
 
   /* Brand (same in both themes) */
-  --brand: #14b8a6;
-  --brand-strong: #0d9488;
-  --brand-ink: #042f2e;
+  --brand: #2e6bf0;
+  --brand-strong: #1d4fc4;
+  --brand-ink: #0a1628;
 
-  /* Motion */
+  /* Motion.
+     NOTE: --duration used to be called --normal, which collided with the --normal
+     tier colour defined below on this same :root. The colour won, so every
+     "transition: x var(--normal)" was an invalid duration and silently did nothing. */
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --fast: 120ms;
-  --normal: 220ms;
+  --duration: 220ms;
+  --slow: 380ms;
 
   /* Layout */
   --sidebar-width: 248px;
   --content-max: 860px;
+
+  /* ---------------------------------------------------------- navigation rail
+     Deep navy in both themes: the rail is the constant the page sits against. */
+  --nav-bg: #0a1628;
+  --nav-bg-2: #122038;
+  --nav-bg-3: #18263f;
+  --nav-text: #e9eef8;
+  --nav-muted: #8795b2;
+  --nav-faint: #5d6b88;
+  --nav-border: rgb(255 255 255 / 0.07);
+  --nav-active: #5b8cff;
+  --nav-active-bg: rgb(91 140 255 / 0.14);
+
+  /* ---------------------------------------------------------- data categories
+     For charts, tiers and any set of colours that must stay distinguishable.
+     Picked to hold up next to each other and on both light and dark surfaces. */
+  --cat-blue: #2e6bf0;
+  --cat-coral: #f4704f;
+  --cat-amber: #fbbc15;
+  --cat-green: #2fbf71;
+  --cat-violet: #8b6fd4;
+  --cat-cyan: #22b8cf;
+
+  /* Signature gradient: the one place the UI raises its voice. */
+  --gradient-hero: linear-gradient(107deg, #4a6cf7 0%, #8e6bd6 54%, #d98ba2 100%);
+  --gradient-accent: linear-gradient(135deg, #4a7dff 0%, #2e6bf0 100%);
 }
 
 /* ------------------------------------------------------------------ light */
 :root,
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #f5f7fb;
+  --bg: #f4f6fa;
   --bg-elevated: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f1f4f9;
-  --surface-3: #e8edf4;
-  --border: #e3e8f0;
-  --border-strong: #cfd7e3;
-  --text: #0f172a;
-  --text-2: #334155;
-  --muted: #64748b;
-  --faint: #94a3b8;
+  --surface-2: #f3f6fb;
+  --surface-3: #e9eef6;
+  --border: #e8edf5;
+  --border-strong: #d3dce9;
+  --text: #16192b;
+  --text-2: #3d465e;
+  --muted: #8a93a8;
+  --faint: #a8b0c2;
 
-  --accent: #0d9488;
-  --accent-hover: #0f766e;
+  --accent: #2e6bf0;
+  --accent-hover: #1d4fc4;
   --accent-text: #ffffff;
-  --accent-soft: #ccfbf1;
-  --accent-soft-text: #115e59;
-  --focus: #2563eb;
+  --accent-soft: #e7effe;
+  --accent-soft-text: #1d4fc4;
+  --focus: #2e6bf0;
 
-  --critical: #dc2626;
-  --critical-soft: #fee2e2;
-  --high: #c2410c;
-  --high-soft: #ffedd5;
-  --normal: #059669;
-  --normal-soft: #d1fae5;
-  --low: #64748b;
-  --low-soft: #f1f5f9;
+  --critical: #f0483e;
+  --critical-soft: #feeceb;
+  --high: #ea6a46;
+  --high-soft: #fff0ea;
+  --normal: #17b978;
+  --normal-soft: #e3f8ef;
+  --low: #8a93a8;
+  --low-soft: #f1f4f9;
 
-  --ok: #15803d;
-  --ok-soft: #dcfce7;
-  --warn: #b45309;
-  --warn-soft: #fef3c7;
-  --danger: #dc2626;
-  --danger-soft: #fee2e2;
+  --ok: #17b978;
+  --ok-soft: #e3f8ef;
+  --warn: #d9920a;
+  --warn-soft: #fef4dc;
+  --danger: #f0483e;
+  --danger-soft: #feeceb;
 
-  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
-  --shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 14px rgb(15 23 42 / 0.05);
-  --shadow-lg: 0 12px 40px rgb(15 23 42 / 0.14);
-  --ring: 0 0 0 3px rgb(13 148 136 / 0.2);
+  /* Soft and wide, so cards lift off the page without a hard edge. */
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 0.04);
+  --shadow: 0 1px 2px rgb(16 24 40 / 0.03), 0 10px 26px rgb(16 24 40 / 0.06);
+  --shadow-md: 0 2px 4px rgb(16 24 40 / 0.04), 0 16px 36px rgb(16 24 40 / 0.09);
+  --shadow-lg: 0 20px 52px rgb(16 24 40 / 0.16);
+  --ring: 0 0 0 3px rgb(46 107 240 / 0.18);
 }
 
 /* ------------------------------------------------------------------ dark */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --bg: #16181d;
-    --bg-elevated: #1b1e24;
-    --surface: #1d2027;
-    --surface-2: #242830;
-    --surface-3: #2d323b;
-    --border: #2a2e36;
-    --border-strong: #383d47;
-    --text: #eceef2;
-    --text-2: #c4c8d0;
-    --muted: #8b919c;
-    --faint: #61666f;
+    --bg: #0c1220;
+    --bg-elevated: #121a2b;
+    --surface: #141d30;
+    --surface-2: #1b2539;
+    --surface-3: #243049;
+    --border: #243049;
+    --border-strong: #324059;
+    --text: #e9edf6;
+    --text-2: #c2cada;
+    --muted: #8795b2;
+    --faint: #67748f;
 
-    --accent: #2dd4bf;
-    --accent-hover: #5eead4;
-    --accent-text: #042f2e;
-    --accent-soft: rgb(45 212 191 / 0.14);
-    --accent-soft-text: #99f6e4;
-    --focus: #60a5fa;
+    --accent: #5b8cff;
+    --accent-hover: #7da4ff;
+    --accent-text: #06122a;
+    --accent-soft: rgb(91 140 255 / 0.16);
+    --accent-soft-text: #a9c4ff;
+    --focus: #5b8cff;
 
-    --critical: #f87171;
-    --critical-soft: rgb(248 113 113 / 0.14);
-    --high: #f5a524;
-    --high-soft: rgb(245 165 36 / 0.14);
+    --critical: #ff6b60;
+    --critical-soft: rgb(255 107 96 / 0.15);
+    --high: #ff8a66;
+    --high-soft: rgb(255 138 102 / 0.15);
     --normal: #34d399;
-    --normal-soft: rgb(52 211 153 / 0.14);
-    --low: #94a3b8;
-    --low-soft: rgb(148 163 184 / 0.12);
+    --normal-soft: rgb(52 211 153 / 0.15);
+    --low: #8795b2;
+    --low-soft: rgb(135 149 178 / 0.13);
 
-    --ok: #4ade80;
-    --ok-soft: rgb(74 222 128 / 0.14);
+    --ok: #34d399;
+    --ok-soft: rgb(52 211 153 / 0.15);
     --warn: #fbbf24;
-    --warn-soft: rgb(251 191 36 / 0.14);
-    --danger: #f87171;
-    --danger-soft: rgb(248 113 113 / 0.14);
+    --warn-soft: rgb(251 191 36 / 0.15);
+    --danger: #ff6b60;
+    --danger-soft: rgb(255 107 96 / 0.15);
 
     --shadow-sm: none;
-    --shadow: 0 1px 0 rgb(255 255 255 / 0.02) inset;
-    --shadow-lg: 0 18px 50px rgb(0 0 0 / 0.5);
-    --ring: 0 0 0 3px rgb(45 212 191 / 0.25);
+    --shadow: 0 1px 0 rgb(255 255 255 / 0.03) inset;
+    --shadow-md: 0 10px 30px rgb(0 0 0 / 0.35);
+    --shadow-lg: 0 20px 56px rgb(0 0 0 / 0.55);
+    --ring: 0 0 0 3px rgb(91 140 255 / 0.28);
+
+    /* The rail sits a touch above the page in dark mode so it stays legible. */
+    --nav-bg: #060b16;
+    --nav-bg-2: #141d33;
+    --nav-bg-3: #1c2744;
   }
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #16181d;
-  --bg-elevated: #1b1e24;
-  --surface: #1d2027;
-  --surface-2: #242830;
-  --surface-3: #2d323b;
-  --border: #2a2e36;
-  --border-strong: #383d47;
-  --text: #eceef2;
-  --text-2: #c4c8d0;
-  --muted: #8b919c;
-  --faint: #61666f;
+  --bg: #0c1220;
+  --bg-elevated: #121a2b;
+  --surface: #141d30;
+  --surface-2: #1b2539;
+  --surface-3: #243049;
+  --border: #243049;
+  --border-strong: #324059;
+  --text: #e9edf6;
+  --text-2: #c2cada;
+  --muted: #8795b2;
+  --faint: #67748f;
 
-  --accent: #2dd4bf;
-  --accent-hover: #5eead4;
-  --accent-text: #042f2e;
-  --accent-soft: rgb(45 212 191 / 0.14);
-  --accent-soft-text: #99f6e4;
-  --focus: #60a5fa;
+  --accent: #5b8cff;
+  --accent-hover: #7da4ff;
+  --accent-text: #06122a;
+  --accent-soft: rgb(91 140 255 / 0.16);
+  --accent-soft-text: #a9c4ff;
+  --focus: #5b8cff;
 
-  --critical: #f87171;
-  --critical-soft: rgb(248 113 113 / 0.14);
-  --high: #f5a524;
-  --high-soft: rgb(245 165 36 / 0.14);
+  --critical: #ff6b60;
+  --critical-soft: rgb(255 107 96 / 0.15);
+  --high: #ff8a66;
+  --high-soft: rgb(255 138 102 / 0.15);
   --normal: #34d399;
-  --normal-soft: rgb(52 211 153 / 0.14);
-  --low: #94a3b8;
-  --low-soft: rgb(148 163 184 / 0.12);
+  --normal-soft: rgb(52 211 153 / 0.15);
+  --low: #8795b2;
+  --low-soft: rgb(135 149 178 / 0.13);
 
-  --ok: #4ade80;
-  --ok-soft: rgb(74 222 128 / 0.14);
+  --ok: #34d399;
+  --ok-soft: rgb(52 211 153 / 0.15);
   --warn: #fbbf24;
-  --warn-soft: rgb(251 191 36 / 0.14);
-  --danger: #f87171;
-  --danger-soft: rgb(248 113 113 / 0.14);
+  --warn-soft: rgb(251 191 36 / 0.15);
+  --danger: #ff6b60;
+  --danger-soft: rgb(255 107 96 / 0.15);
 
   --shadow-sm: none;
-  --shadow: 0 1px 0 rgb(255 255 255 / 0.02) inset;
-  --shadow-lg: 0 18px 50px rgb(0 0 0 / 0.5);
-  --ring: 0 0 0 3px rgb(45 212 191 / 0.25);
+  --shadow: 0 1px 0 rgb(255 255 255 / 0.03) inset;
+  --shadow-md: 0 10px 30px rgb(0 0 0 / 0.35);
+  --shadow-lg: 0 20px 56px rgb(0 0 0 / 0.55);
+  --ring: 0 0 0 3px rgb(91 140 255 / 0.28);
+
+  --nav-bg: #060b16;
+  --nav-bg-2: #141d33;
+  --nav-bg-3: #1c2744;
 }

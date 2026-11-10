@@ -55,7 +55,7 @@
 }
 
 .auth-brand .logo-accent {
-  color: #2dd4bf;
+  color: #7da4ff;
 }
 
 .auth-brand-copy h2 {
@@ -94,8 +94,8 @@
   width: 22px;
   height: 22px;
   border-radius: 7px;
-  background: rgb(45 212 191 / 0.16);
-  color: #2dd4bf;
+  background: rgb(125 164 255 / 0.18);
+  color: #7da4ff;
   flex-shrink: 0;
 }
 
@@ -123,7 +123,7 @@
 
 .auth-sample-why {
   font-size: var(--text-xs);
-  color: #99f6e4;
+  color: #a9c4ff;
 }
 
 .auth-main {
@@ -330,7 +330,7 @@ input[aria-invalid='true']:focus {
   height: 4px;
   border-radius: 2px;
   background: var(--surface-3);
-  transition: background var(--normal) var(--ease);
+  transition: background var(--duration) var(--ease);
 }
 
 .strength em {

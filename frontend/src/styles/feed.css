@@ -414,7 +414,7 @@ button.fr-chip:hover {
   border-radius: var(--radius);
   background: var(--surface);
   cursor: default;
-  animation: fr-open var(--normal) var(--ease);
+  animation: fr-open var(--duration) var(--ease);
 }
 
 @keyframes fr-open {
@@ -678,7 +678,7 @@ button.fr-chip:hover {
   display: block;
   height: 100%;
   border-radius: 2px;
-  transition: width var(--normal) var(--ease);
+  transition: width var(--duration) var(--ease);
 }
 
 .rail-critical .rail-bar span {
@@ -869,7 +869,7 @@ button.fr-chip:hover {
   height: 100%;
   border-radius: 2px;
   background: var(--accent);
-  transition: width var(--normal) var(--ease);
+  transition: width var(--duration) var(--ease);
 }
 
 .rail-more {

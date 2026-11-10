@@ -3,7 +3,7 @@
    ========================================================================== */
 
 :root {
-  --topbar-h: 52px;
+  --topbar-h: 78px;
 }
 
 .topbar {
@@ -14,42 +14,49 @@
   align-items: center;
   gap: 20px;
   height: var(--topbar-h);
-  padding: 0 20px 0 32px;
+  padding: 0 28px 0 34px;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--bg-elevated) 86%, transparent);
+  backdrop-filter: blur(14px);
 }
 
+/* The page name carries the header: large, confident, no icon competing with it. */
 .topbar-page {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 11px;
   flex-shrink: 0;
-  font-size: var(--text-sm);
-  font-weight: 650;
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--text);
 }
 
 .topbar-page svg {
-  color: var(--accent);
+  display: none;
 }
 
 .topbar-search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex: 0 1 380px;
-  height: 34px;
-  margin: 0 auto;
-  padding: 0 8px 0 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--muted);
-  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  gap: 10px;
+  flex: 0 1 300px;
+  height: 46px;
+  margin-left: auto;
+  padding: 0 10px 0 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  color: var(--faint);
+  transition:
+    border-color var(--fast) var(--ease),
+    background var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
 }
 
 .topbar-search:focus-within {
+  background: var(--surface);
   border-color: var(--accent);
   box-shadow: var(--ring);
 }
@@ -83,8 +90,13 @@
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   margin-left: auto;
+}
+
+/* With the search present it already took the auto margin. */
+.topbar-search ~ .topbar-right {
+  margin-left: 0;
 }
 
 /* Market clock */
@@ -92,15 +104,19 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 32px;
-  margin-right: 8px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
+  height: 38px;
+  margin-right: 2px;
+  padding: 0 15px;
+  border: 1px solid transparent;
   border-radius: var(--radius-full);
-  background: var(--surface);
+  background: var(--surface-2);
   font-size: var(--text-xs);
   color: var(--muted);
   white-space: nowrap;
+}
+
+.topbar-market.is-open {
+  background: var(--ok-soft);
 }
 
 .topbar-market-dot {
@@ -132,8 +148,8 @@
 }
 
 .topbar-clock {
-  padding-left: 8px;
-  border-left: 1px solid var(--border);
+  padding-left: 9px;
+  border-left: 1px solid var(--border-strong);
   font-weight: 600;
   color: var(--text-2);
 }
@@ -143,54 +159,75 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface-2);
   color: var(--muted);
-  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
 }
 
 .topbar-icon:hover {
-  background: var(--surface-2);
-  color: var(--text);
+  background: var(--accent-soft);
+  color: var(--accent);
+  transform: translateY(-1px);
 }
 
 .topbar-badge {
   position: absolute;
-  top: 3px;
-  right: 2px;
-  min-width: 17px;
-  height: 17px;
+  top: 5px;
+  right: 3px;
+  min-width: 18px;
+  height: 18px;
   padding: 0 4px;
-  border: 2px solid var(--bg);
+  border: 2px solid var(--bg-elevated);
   border-radius: var(--radius-full);
   background: var(--critical);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
-  line-height: 13px;
+  line-height: 14px;
   text-align: center;
 }
 
 .topbar-avatar {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  margin-left: 4px;
+  width: 44px;
+  height: 44px;
+  margin-left: 2px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #3b82f6));
-  color: var(--accent-text);
-  font-size: 12px;
-  font-weight: 800;
+  background: var(--gradient-hero);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  box-shadow: 0 0 0 3px var(--bg-elevated), 0 0 0 4px var(--border);
+  transition:
+    box-shadow var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
 }
 
 .topbar-avatar:hover {
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 3px var(--bg-elevated), 0 0 0 4px var(--accent);
 }
 
-@media (max-width: 1240px) {
+@media (max-width: 1400px) {
   .topbar-market-detail {
+    display: none;
+  }
+}
+
+@media (max-width: 1180px) {
+  .topbar-search {
+    flex-basis: 220px;
+  }
+
+  .topbar-market-state {
     display: none;
   }
 }
