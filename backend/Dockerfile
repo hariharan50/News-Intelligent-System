@@ -1,6 +1,6 @@
 # One image runs every Python service: api, migrate, scheduler and worker.
 # docker-compose.yml picks the command for each.
-FROM python:3.12-slim AS base
+FROM python:3.15-slim AS base
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.3 /uv /bin/uv
 
